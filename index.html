@@ -808,7 +808,6 @@
           dragging: false,
           scrolling: false
         };
-        viewport.setPointerCapture(e.pointerId);
       });
 
       viewport.addEventListener("pointermove", (e) => {
@@ -821,9 +820,11 @@
           swipeStart.moved = true;
           if (Math.abs(dx) > Math.abs(dy)) {
             swipeStart.dragging = true;
+            viewport.setPointerCapture(e.pointerId);
             track.style.transition = "none";
           } else {
             swipeStart.scrolling = true;
+            viewport.setPointerCapture(e.pointerId);
           }
         }
 
@@ -1448,13 +1449,12 @@
         const beginDrag = () => {
           card.classList.add("dragging");
           card.dataset.dragging = "1";
+          card.setPointerCapture(pressStart.pointerId);
         };
 
         card.addEventListener("pointerdown", (e) => {
           if (e.target.closest(".check-btn, .del-btn, .habit-name-input")) return;
-          e.stopPropagation();
           pressStart = { x: e.clientX, y: e.clientY, lastY: e.clientY, pointerId: e.pointerId, moved: false, scrolling: false };
-          card.setPointerCapture(e.pointerId);
           longPressTimer = setTimeout(() => {
             if (pressStart && !pressStart.moved) beginDrag();
           }, 350);
@@ -1464,6 +1464,7 @@
           if (!pressStart || pressStart.pointerId !== e.pointerId) return;
 
           if (card.dataset.dragging === "1") {
+            e.stopPropagation();
             e.preventDefault();
             const listEl = document.getElementById("habitList");
             const cards = Array.from(listEl.querySelectorAll(".habit-card"));
@@ -1493,10 +1494,12 @@
             clearTimeout(longPressTimer);
             if (Math.abs(dy) > Math.abs(dx)) {
               pressStart.scrolling = true;
+              card.setPointerCapture(e.pointerId);
             }
           }
 
           if (pressStart.scrolling) {
+            e.stopPropagation();
             window.scrollBy(0, pressStart.lastY - e.clientY);
             pressStart.lastY = e.clientY;
           }
