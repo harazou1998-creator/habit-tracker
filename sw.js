@@ -1,4 +1,4 @@
-const CACHE_NAME = "habit-app-v1";
+const CACHE_NAME = "habit-app-v2";
 const ASSETS = ["./index.html", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", (e) => {
@@ -16,5 +16,13 @@ self.addEventListener("activate", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
-  e.respondWith(caches.match(e.request).then((cached) => cached || fetch(e.request)));
+  e.respondWith(
+    fetch(e.request)
+      .then((res) => {
+        const resClone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, resClone));
+        return res;
+      })
+      .catch(() => caches.match(e.request))
+  );
 });
