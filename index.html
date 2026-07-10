@@ -56,6 +56,12 @@
       margin-bottom: 16px;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
       cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .status-bar.active {
+      background: #1a2358;
+      border-color: #5b70ff;
+      box-shadow: 0 6px 18px rgba(91, 112, 255, 0.4);
     }
     .status-sprite-wrap {
       flex-shrink: 0;
@@ -1627,6 +1633,7 @@
       updatePageTransform();
       document.getElementById("tabTodayBtn").classList.toggle("active", currentPage === "today");
       document.getElementById("tabCalendarBtn").classList.toggle("active", currentPage === "calendar");
+      document.getElementById("statusBar").classList.toggle("active", currentPage === "status");
     }
 
     document.getElementById("addForm").addEventListener("submit", (e) => {
