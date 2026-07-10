@@ -114,6 +114,22 @@
       background: linear-gradient(90deg, #5b70ff, #8fa2ff);
     }
 
+    .page-viewport {
+      overflow: hidden;
+      position: relative;
+    }
+    .page-track {
+      display: flex;
+      align-items: flex-start;
+      width: 300%;
+      transform: translateX(0%);
+    }
+    .page-slide {
+      width: 33.3333%;
+      flex-shrink: 0;
+      min-width: 0;
+    }
+
     .tab-nav {
       display: flex;
       gap: 8px;
@@ -647,32 +663,36 @@
       <button type="button" class="tab-btn" id="tabStatusBtn">🎮 ステータス</button>
     </div>
 
-    <div id="pageToday">
-      <div class="progress-card">
-        <div class="progress-top">
-          <span class="label" id="todayLabel">今日の進捗</span>
-          <span class="count" id="todayCount">0 / 0</span>
+    <div class="page-viewport" id="pageViewport">
+      <div class="page-track" id="pageTrack">
+        <div class="page-slide" id="pageToday">
+          <div class="progress-card">
+            <div class="progress-top">
+              <span class="label" id="todayLabel">今日の進捗</span>
+              <span class="count" id="todayCount">0 / 0</span>
+            </div>
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <form class="add-form" id="addForm">
+            <input id="habitInput" type="text" placeholder="新しい習慣を入力(例: 筋トレ、読書10分)" maxlength="40" />
+            <button type="submit">追加</button>
+          </form>
+
+          <div id="habitList"></div>
+          <div class="empty" id="emptyMsg" style="display:none">まだ習慣が登録されていません。上のフォームから追加してください。</div>
         </div>
-        <div class="progress-bar-track">
-          <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
+
+        <div class="page-slide" id="pageCalendar">
+          <div class="calendar-card" id="calendarCard"></div>
+        </div>
+
+        <div class="page-slide" id="pageStatus">
+          <div class="rpg-card" id="rpgCard"></div>
         </div>
       </div>
-
-      <form class="add-form" id="addForm">
-        <input id="habitInput" type="text" placeholder="新しい習慣を入力(例: 筋トレ、読書10分)" maxlength="40" />
-        <button type="submit">追加</button>
-      </form>
-
-      <div id="habitList"></div>
-      <div class="empty" id="emptyMsg" style="display:none">まだ習慣が登録されていません。上のフォームから追加してください。</div>
-    </div>
-
-    <div id="pageCalendar">
-      <div class="calendar-card" id="calendarCard"></div>
-    </div>
-
-    <div id="pageStatus">
-      <div class="rpg-card" id="rpgCard"></div>
     </div>
   </div>
 
@@ -703,9 +723,82 @@
     let calMonth = now0.getMonth();
     let player = JSON.parse(localStorage.getItem(PLAYER_KEY) || '{"xp":0,"coins":0,"ownedItems":[]}');
 
+    const PAGE_ORDER = ["today", "calendar", "status"];
+
     function switchPage(page) {
       currentPage = page;
       render();
+    }
+
+    function updatePageTransform() {
+      const track = document.getElementById("pageTrack");
+      const viewport = document.getElementById("pageViewport");
+      const index = PAGE_ORDER.indexOf(currentPage);
+      track.style.transition = "transform 0.3s ease";
+      track.style.transform = `translateX(${-(index / 3) * 100}%)`;
+      const activeSlide = document.getElementById(
+        currentPage === "today" ? "pageToday" : currentPage === "calendar" ? "pageCalendar" : "pageStatus"
+      );
+      viewport.style.height = activeSlide.scrollHeight + "px";
+    }
+
+    let swipeStart = null;
+
+    function initSwipe() {
+      const viewport = document.getElementById("pageViewport");
+      const track = document.getElementById("pageTrack");
+
+      viewport.addEventListener("pointerdown", (e) => {
+        if (e.target.closest("input, textarea")) return;
+        swipeStart = { x: e.clientX, y: e.clientY, pointerId: e.pointerId, index: PAGE_ORDER.indexOf(currentPage), dragging: false };
+      });
+
+      viewport.addEventListener("pointermove", (e) => {
+        if (!swipeStart || swipeStart.pointerId !== e.pointerId) return;
+        const dx = e.clientX - swipeStart.x;
+        const dy = e.clientY - swipeStart.y;
+
+        if (!swipeStart.dragging) {
+          if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) {
+            swipeStart.dragging = true;
+            viewport.setPointerCapture(e.pointerId);
+            track.style.transition = "none";
+          } else if (Math.abs(dy) > 12) {
+            swipeStart = null;
+            return;
+          } else {
+            return;
+          }
+        }
+
+        e.preventDefault();
+        const viewportWidth = viewport.clientWidth || 1;
+        const pct = (dx / viewportWidth) * (100 / 3);
+        let translatePct = -(swipeStart.index / 3) * 100 + pct;
+        translatePct = Math.max(-(2 / 3) * 100 - 100 / 9, Math.min(100 / 9, translatePct));
+        track.style.transform = `translateX(${translatePct}%)`;
+      });
+
+      const endSwipe = (e) => {
+        if (!swipeStart || swipeStart.pointerId !== e.pointerId) return;
+        if (swipeStart.dragging) {
+          const dx = e.clientX - swipeStart.x;
+          const viewportWidth = viewport.clientWidth || 1;
+          const threshold = viewportWidth * 0.18;
+          let newIndex = swipeStart.index;
+          if (dx < -threshold && newIndex < PAGE_ORDER.length - 1) newIndex++;
+          else if (dx > threshold && newIndex > 0) newIndex--;
+          currentPage = PAGE_ORDER[newIndex];
+          if (viewport.hasPointerCapture(e.pointerId)) viewport.releasePointerCapture(e.pointerId);
+          render();
+        }
+        swipeStart = null;
+      };
+      viewport.addEventListener("pointerup", endSwipe);
+      viewport.addEventListener("pointercancel", () => {
+        if (swipeStart && swipeStart.dragging) render();
+        swipeStart = null;
+      });
     }
 
     document.getElementById("tabTodayBtn").addEventListener("click", () => switchPage("today"));
@@ -1435,9 +1528,7 @@
       buildRpgCard();
       buildStatusBar();
 
-      document.getElementById("pageToday").style.display = currentPage === "today" ? "block" : "none";
-      document.getElementById("pageCalendar").style.display = currentPage === "calendar" ? "block" : "none";
-      document.getElementById("pageStatus").style.display = currentPage === "status" ? "block" : "none";
+      updatePageTransform();
       document.getElementById("tabTodayBtn").classList.toggle("active", currentPage === "today");
       document.getElementById("tabCalendarBtn").classList.toggle("active", currentPage === "calendar");
       document.getElementById("tabStatusBtn").classList.toggle("active", currentPage === "status");
@@ -1459,6 +1550,7 @@
       render();
     });
 
+    initSwipe();
     render();
 
     if ("serviceWorker" in navigator) {
