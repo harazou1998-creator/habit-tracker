@@ -25,11 +25,11 @@
       color: #e8ecff;
       min-height: 100vh;
       padding: 24px 16px 80px;
+      touch-action: none;
     }
     .wrap {
       max-width: 760px;
       margin: 0 auto;
-      touch-action: none;
     }
     h1 {
       font-size: 22px;
@@ -794,7 +794,7 @@
     let swipeStart = null;
 
     function initSwipe() {
-      const swipeZone = document.querySelector(".wrap");
+      const swipeZone = document.body;
       const viewport = document.getElementById("pageViewport");
       const track = document.getElementById("pageTrack");
 
