@@ -55,6 +55,7 @@
       padding: 8px 12px;
       margin-bottom: 16px;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+      cursor: pointer;
     }
     .status-sprite-wrap {
       flex-shrink: 0;
@@ -710,7 +711,6 @@
     <div class="tab-nav">
       <button type="button" class="tab-btn" id="tabTodayBtn">📋 今日</button>
       <button type="button" class="tab-btn" id="tabCalendarBtn">📅 記録</button>
-      <button type="button" class="tab-btn" id="tabStatusBtn">🎮 ステータス</button>
     </div>
 
     <div class="page-viewport" id="pageViewport">
@@ -865,7 +865,7 @@
 
     document.getElementById("tabTodayBtn").addEventListener("click", () => switchPage("today"));
     document.getElementById("tabCalendarBtn").addEventListener("click", () => switchPage("calendar"));
-    document.getElementById("tabStatusBtn").addEventListener("click", () => switchPage("status"));
+    document.getElementById("statusBar").addEventListener("click", () => switchPage("status"));
 
     function save() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
@@ -1627,7 +1627,6 @@
       updatePageTransform();
       document.getElementById("tabTodayBtn").classList.toggle("active", currentPage === "today");
       document.getElementById("tabCalendarBtn").classList.toggle("active", currentPage === "calendar");
-      document.getElementById("tabStatusBtn").classList.toggle("active", currentPage === "status");
     }
 
     document.getElementById("addForm").addEventListener("submit", (e) => {
