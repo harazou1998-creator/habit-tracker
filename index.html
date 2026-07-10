@@ -1607,8 +1607,14 @@
 
         if (isEditing) {
           const input = card.querySelector(".habit-name-input");
+          const placeCursorAtEnd = () => {
+            const len = input.value.length;
+            input.setSelectionRange(len, len);
+          };
           input.focus();
-          input.setSelectionRange(input.value.length, input.value.length);
+          placeCursorAtEnd();
+          setTimeout(placeCursorAtEnd, 0);
+          setTimeout(placeCursorAtEnd, 50);
         }
       });
 
