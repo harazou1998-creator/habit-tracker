@@ -1469,19 +1469,44 @@
             const listEl = document.getElementById("habitList");
             const cards = Array.from(listEl.querySelectorAll(".habit-card"));
             const draggedIndex = cards.indexOf(card);
+            let targetIndex = -1;
             for (let i = 0; i < cards.length; i++) {
               if (cards[i] === card) continue;
               const rect = cards[i].getBoundingClientRect();
               const mid = rect.top + rect.height / 2;
               if (e.clientY < mid && i < draggedIndex) {
-                listEl.insertBefore(card, cards[i]);
-                moveHabitInArray(habit.id, i);
+                targetIndex = i;
                 break;
               } else if (e.clientY > mid && i > draggedIndex) {
-                listEl.insertBefore(card, cards[i].nextSibling);
-                moveHabitInArray(habit.id, i);
+                targetIndex = i;
                 break;
               }
+            }
+            if (targetIndex !== -1) {
+              const firstRects = new Map();
+              cards.forEach((c) => {
+                if (c !== card) firstRects.set(c, c.getBoundingClientRect());
+              });
+
+              if (targetIndex > draggedIndex) {
+                listEl.insertBefore(card, cards[targetIndex].nextSibling);
+              } else {
+                listEl.insertBefore(card, cards[targetIndex]);
+              }
+              moveHabitInArray(habit.id, targetIndex);
+
+              firstRects.forEach((firstRect, c) => {
+                const lastRect = c.getBoundingClientRect();
+                const deltaY = firstRect.top - lastRect.top;
+                if (deltaY !== 0) {
+                  c.style.transition = "none";
+                  c.style.transform = `translateY(${deltaY}px)`;
+                  requestAnimationFrame(() => {
+                    c.style.transition = "transform 0.2s ease, opacity 0.15s ease";
+                    c.style.transform = "";
+                  });
+                }
+              });
             }
             return;
           }
