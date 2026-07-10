@@ -853,7 +853,7 @@
         if (swipeStart.dragging) {
           const dx = e.clientX - swipeStart.x;
           const viewportWidth = viewport.clientWidth || 1;
-          const threshold = viewportWidth * 0.06;
+          const threshold = viewportWidth * 0.03;
           let newIndex = swipeStart.index;
           if (dx < -threshold && newIndex < PAGE_ORDER.length - 1) newIndex++;
           else if (dx > threshold && newIndex > 0) newIndex--;
