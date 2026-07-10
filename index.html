@@ -54,19 +54,64 @@
       margin-bottom: 16px;
       box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
     }
-    .status-xp-track {
+    .status-sprite-wrap {
+      flex-shrink: 0;
+      width: 40px;
+      height: 55px;
+      display: grid;
+      place-items: center;
+      background: #0b1020;
+      border: 1px solid #262f5c;
+      border-radius: 8px;
+    }
+    .status-sprite-wrap svg {
+      width: 36px;
+      height: 49.5px;
+      shape-rendering: crispEdges;
+    }
+    .status-info {
       flex: 1;
       min-width: 0;
-      height: 7px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .status-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .status-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-bar-label {
+      flex-shrink: 0;
+      width: 26px;
+      font-size: 9px;
+      font-weight: 700;
+      opacity: 0.65;
+    }
+    .status-track {
+      flex: 1;
+      min-width: 0;
+      height: 6px;
       border-radius: 4px;
       background: #1c2450;
       overflow: hidden;
     }
-    .status-xp-fill {
+    .status-fill {
       height: 100%;
-      background: linear-gradient(90deg, #5b70ff, #8fa2ff);
       border-radius: 4px;
       transition: width 0.25s ease;
+    }
+    .status-fill.hp {
+      background: linear-gradient(90deg, #ff6b6b, #ff9b6b);
+    }
+    .status-fill.xp {
+      background: linear-gradient(90deg, #5b70ff, #8fa2ff);
     }
 
     .tab-nav {
@@ -297,7 +342,7 @@
       padding: 16px 18px;
       margin-bottom: 14px;
       transition: opacity 0.15s ease;
-      touch-action: pan-y;
+      touch-action: none;
       cursor: pointer;
     }
     .habit-card.dragging {
@@ -1081,24 +1126,37 @@
       const xpIntoLevel = player.xp % XP_PER_LEVEL;
       const xpPct = Math.round((xpIntoLevel / XP_PER_LEVEL) * 100);
 
+      const spriteWrap = document.createElement("div");
+      spriteWrap.className = "status-sprite-wrap";
+      spriteWrap.appendChild(buildHeroSprite(level));
+      bar.appendChild(spriteWrap);
+
+      const info = document.createElement("div");
+      info.className = "status-info";
+
+      const topRow = document.createElement("div");
+      topRow.className = "status-top-row";
       const levelBadge = document.createElement("span");
       levelBadge.className = "level-badge";
       levelBadge.textContent = `Lv.${level}`;
-
-      const track = document.createElement("div");
-      track.className = "status-xp-track";
-      const fill = document.createElement("div");
-      fill.className = "status-xp-fill";
-      fill.style.width = xpPct + "%";
-      track.appendChild(fill);
-
       const coin = document.createElement("span");
       coin.className = "coin-display";
       coin.textContent = `🪙 ${player.coins}`;
+      topRow.appendChild(levelBadge);
+      topRow.appendChild(coin);
+      info.appendChild(topRow);
 
-      bar.appendChild(levelBadge);
-      bar.appendChild(track);
-      bar.appendChild(coin);
+      const hpRow = document.createElement("div");
+      hpRow.className = "status-bar-row";
+      hpRow.innerHTML = `<span class="status-bar-label">HP</span><div class="status-track"><div class="status-fill hp" style="width:100%"></div></div>`;
+      info.appendChild(hpRow);
+
+      const xpRow = document.createElement("div");
+      xpRow.className = "status-bar-row";
+      xpRow.innerHTML = `<span class="status-bar-label">EXP</span><div class="status-track"><div class="status-fill xp" style="width:${xpPct}%"></div></div>`;
+      info.appendChild(xpRow);
+
+      bar.appendChild(info);
     }
 
     function buildRpgCard() {
@@ -1237,7 +1295,7 @@
 
         card.addEventListener("pointerdown", (e) => {
           if (e.target.closest(".check-btn, .del-btn, .habit-name-input")) return;
-          pressStart = { x: e.clientX, y: e.clientY, pointerId: e.pointerId, moved: false };
+          pressStart = { x: e.clientX, y: e.clientY, lastY: e.clientY, pointerId: e.pointerId, moved: false, scrolling: false };
           card.setPointerCapture(e.pointerId);
           longPressTimer = setTimeout(() => {
             if (pressStart && !pressStart.moved) beginDrag();
@@ -1246,34 +1304,43 @@
 
         card.addEventListener("pointermove", (e) => {
           if (!pressStart || pressStart.pointerId !== e.pointerId) return;
-          const dx = e.clientX - pressStart.x;
-          const dy = e.clientY - pressStart.y;
 
-          if (card.dataset.dragging !== "1") {
-            if (Math.hypot(dx, dy) > 10) {
-              pressStart.moved = true;
-              clearTimeout(longPressTimer);
+          if (card.dataset.dragging === "1") {
+            e.preventDefault();
+            const listEl = document.getElementById("habitList");
+            const cards = Array.from(listEl.querySelectorAll(".habit-card"));
+            const draggedIndex = cards.indexOf(card);
+            for (let i = 0; i < cards.length; i++) {
+              if (cards[i] === card) continue;
+              const rect = cards[i].getBoundingClientRect();
+              const mid = rect.top + rect.height / 2;
+              if (e.clientY < mid && i < draggedIndex) {
+                listEl.insertBefore(card, cards[i]);
+                moveHabitInArray(habit.id, i);
+                break;
+              } else if (e.clientY > mid && i > draggedIndex) {
+                listEl.insertBefore(card, cards[i].nextSibling);
+                moveHabitInArray(habit.id, i);
+                break;
+              }
             }
             return;
           }
 
-          e.preventDefault();
-          const listEl = document.getElementById("habitList");
-          const cards = Array.from(listEl.querySelectorAll(".habit-card"));
-          const draggedIndex = cards.indexOf(card);
-          for (let i = 0; i < cards.length; i++) {
-            if (cards[i] === card) continue;
-            const rect = cards[i].getBoundingClientRect();
-            const mid = rect.top + rect.height / 2;
-            if (e.clientY < mid && i < draggedIndex) {
-              listEl.insertBefore(card, cards[i]);
-              moveHabitInArray(habit.id, i);
-              break;
-            } else if (e.clientY > mid && i > draggedIndex) {
-              listEl.insertBefore(card, cards[i].nextSibling);
-              moveHabitInArray(habit.id, i);
-              break;
+          const dx = e.clientX - pressStart.x;
+          const dy = e.clientY - pressStart.y;
+
+          if (!pressStart.moved && Math.hypot(dx, dy) > 8) {
+            pressStart.moved = true;
+            clearTimeout(longPressTimer);
+            if (Math.abs(dy) > Math.abs(dx)) {
+              pressStart.scrolling = true;
             }
+          }
+
+          if (pressStart.scrolling) {
+            window.scrollBy(0, pressStart.lastY - e.clientY);
+            pressStart.lastY = e.clientY;
           }
         });
 
