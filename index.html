@@ -822,11 +822,9 @@
           swipeStart.moved = true;
           if (Math.abs(dx) > Math.abs(dy)) {
             swipeStart.dragging = true;
-            swipeZone.setPointerCapture(e.pointerId);
             track.style.transition = "none";
           } else {
             swipeStart.scrolling = true;
-            swipeZone.setPointerCapture(e.pointerId);
           }
         }
 
@@ -845,7 +843,6 @@
 
       const endSwipe = (e) => {
         if (!swipeStart || swipeStart.pointerId !== e.pointerId) return;
-        if (swipeZone.hasPointerCapture(e.pointerId)) swipeZone.releasePointerCapture(e.pointerId);
         if (swipeStart.dragging) {
           const dx = e.clientX - swipeStart.x;
           const viewportWidth = viewport.clientWidth || 1;
@@ -860,10 +857,7 @@
       };
       swipeZone.addEventListener("pointerup", endSwipe);
       swipeZone.addEventListener("pointercancel", (e) => {
-        if (swipeStart && swipeStart.pointerId === e.pointerId) {
-          if (swipeZone.hasPointerCapture(e.pointerId)) swipeZone.releasePointerCapture(e.pointerId);
-          if (swipeStart.dragging) render();
-        }
+        if (swipeStart && swipeStart.pointerId === e.pointerId && swipeStart.dragging) render();
         swipeStart = null;
       });
     }
