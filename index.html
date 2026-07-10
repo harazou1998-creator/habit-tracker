@@ -1608,7 +1608,7 @@
         if (isEditing) {
           const input = card.querySelector(".habit-name-input");
           input.focus();
-          input.select();
+          input.setSelectionRange(input.value.length, input.value.length);
         }
       });
 
