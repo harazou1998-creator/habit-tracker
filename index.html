@@ -26,6 +26,7 @@
       min-height: 100vh;
       padding: 24px 16px 80px;
       touch-action: none;
+      overscroll-behavior-y: contain;
     }
     .wrap {
       max-width: 760px;
@@ -116,9 +117,8 @@
     }
 
     .page-viewport {
-      overflow: hidden;
+      overflow-x: hidden;
       position: relative;
-      touch-action: none;
     }
     .page-track {
       display: flex;
@@ -781,14 +781,9 @@
 
     function updatePageTransform() {
       const track = document.getElementById("pageTrack");
-      const viewport = document.getElementById("pageViewport");
       const index = PAGE_ORDER.indexOf(currentPage);
       track.style.transition = "transform 0.3s ease";
       track.style.transform = `translateX(${-(index / 3) * 100}%)`;
-      const activeSlide = document.getElementById(
-        currentPage === "today" ? "pageToday" : currentPage === "calendar" ? "pageCalendar" : "pageStatus"
-      );
-      viewport.style.height = activeSlide.scrollHeight + "px";
     }
 
     let swipeStart = null;
